@@ -2,7 +2,9 @@ package sirgl.lexer
 
 import sirgl.lexer.nfa.regex.RegexNode
 
-
+/**
+ * Order of declarations is important, rule that declared first will win in equal other conditions
+ */
 abstract class LexerDefinition<T> {
     // Maybe not even T, but factory for T
     val rules = mutableMapOf<RegexNode, T>()

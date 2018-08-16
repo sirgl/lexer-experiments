@@ -11,6 +11,7 @@ fun main(args: Array<String>) {
     val tokens = lexer.tokenize("fun foo (y: Int){val x: Int = 12;}", true)
     val parser = RecursiveDescentHandwrittenParser()
     println(tokens.joinToString(separator = "\n") { it.pretty() })
+    println("----")
     val function = parser.parse(tokens)
     println(function.pretty())
 

@@ -10,8 +10,7 @@ data class MatchResult (val exitIndices: IntList, val matchedNodes: List<NfaNode
 class NfaNode(val edges: MutableList<NfaEdge> = mutableListOf(), var endIndex: Int? = null) {
     // Matches edges of current node only (without epsilon closure) and adds epsilon closure of ens of
     // matched edges to result as well as indices of exits
-    fun matchDirect(codePoint: Int) : MatchResult {
-        val exitIndices = IntList()
+    fun match(codePoint: Int) : Collection<NfaNode> {
         val nodes = hashSetOf<NfaNode>()
         for (edge in edges) {
             if (edge is StableEdge) {
@@ -21,16 +20,14 @@ class NfaNode(val edges: MutableList<NfaEdge> = mutableListOf(), var endIndex: I
                 val closure = edgeEnd.nodeEpsilonClosure()
                 for (node in closure) {
                     nodes.add(node)
-                    val endIndex = node.endIndex ?: continue
-                    exitIndices.add(endIndex)
                 }
             }
         }
-        return MatchResult(exitIndices, nodes.toList())
+        return nodes
     }
 
 
-    fun matchWithoutEpsilonClosure(codePoint: Int): OptimizedMatchResult {
+    fun matchWithoutEpsilonClosure(codePoint: Int): Collection<NfaNode> {
         val nodes = mutableListOf<NfaNode>()
         var exitIndex = Int.MAX_VALUE
         val endIndex = this.endIndex
@@ -48,14 +45,9 @@ class NfaNode(val edges: MutableList<NfaEdge> = mutableListOf(), var endIndex: I
                 nodes.add(edgeEnd)
             }
         }
-        return OptimizedMatchResult(if(exitIndex == Int.MAX_VALUE) null else exitIndex, nodes)
+        return nodes
     }
 }
-
-data class OptimizedMatchResult(
-        val exitIndex: Int?,
-        val matchedNodes: List<NfaNode>
-)
 
 class EpsilonClosureResult(
         val edges: List<StableEdge>,
