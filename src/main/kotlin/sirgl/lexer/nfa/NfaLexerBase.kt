@@ -71,7 +71,7 @@ abstract class NfaLexerBase<T>(definition: LexerDefinition<T>) : Lexer<T> {
         var index = startIndex
         val length = text.length
         val candidateInfo = CandidateInfo()
-        handleImmediatelyReachableNodes(index, candidateInfo)
+        handleImmediatelyReachableNodes(text, index, candidateInfo, startIndex)
         while (index < length) {
             val codePoint = Character.codePointAt(text, index)
             val nextStates = hashSetOf<NfaNode>()
@@ -85,7 +85,7 @@ abstract class NfaLexerBase<T>(definition: LexerDefinition<T>) : Lexer<T> {
                 val matchedNodes = match(stateNode, codePoint)
                 nextStates.addAll(matchedNodes)
                 for (matchedNode in matchedNodes) {
-                    handleCandidate(nextCandidate, matchedNode, index, false)
+                    handleCandidate(text, nextCandidate, matchedNode, index, false, startIndex)
                 }
             }
 
@@ -106,22 +106,32 @@ abstract class NfaLexerBase<T>(definition: LexerDefinition<T>) : Lexer<T> {
 
     abstract fun match(node: NfaNode, codePoint: Int): Collection<NfaNode>
 
-    private fun handleImmediatelyReachableNodes(index: Int, candidateInfo: CandidateInfo) {
+    private fun handleImmediatelyReachableNodes(text: CharSequence, index: Int, candidateInfo: CandidateInfo, startIndex: Int) {
         for (stateNode in currentStates) {
-            handleCandidate(candidateInfo, stateNode, index, true)
+            handleCandidate(text, candidateInfo, stateNode, index, true, startIndex)
         }
     }
 
     private fun handleCandidate(
+            text: CharSequence,
             candidateInfo: CandidateInfo,
             node: NfaNode,
             index: Int,
-            reachableOnThisIteration: Boolean
+            reachableOnThisIteration: Boolean,
+            startIndex: Int
     ) {
-        val endIndex = node.endIndex ?: return
-        if (endIndex > candidateInfo.tokenTypeIndex) return
-        candidateInfo.tokenTypeIndex = endIndex
-        candidateInfo.endNodeIndex = if (reachableOnThisIteration) index else index + 1
+        val tokenIndex = node.endIndex ?: return
+        if (tokenIndex > candidateInfo.tokenTypeIndex) return
+        val newEndNodeIndex = if (reachableOnThisIteration) index else index + 1
+        if (newEndNodeIndex < candidateInfo.endNodeIndex) return
+        val externalLexer = indicesToExternalLexer[tokenIndex]
+        val endNodeIndexFinal = if (externalLexer != null) {
+            externalLexer.tryTokenize(text, startIndex, newEndNodeIndex) ?: newEndNodeIndex
+        } else {
+            newEndNodeIndex
+        }
+        candidateInfo.tokenTypeIndex = tokenIndex
+        candidateInfo.endNodeIndex = endNodeIndexFinal
     }
 }
 
