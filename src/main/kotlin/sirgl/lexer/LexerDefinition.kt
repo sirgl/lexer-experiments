@@ -15,6 +15,8 @@ abstract class LexerDefinition<T> {
 
     abstract val whitespaces: T // TODO maybe place here TokenSet
 
+    abstract val comments: T
+
     fun regex(node: RegexNode, label: T): RegexNode {
         rules[node] = label
         return node

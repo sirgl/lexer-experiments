@@ -14,6 +14,7 @@ abstract class NfaLexerBase<T>(definition: LexerDefinition<T>) : Lexer<T> {
     protected var currentStates = initialState
     protected val endToken = definition.endLexeme
     protected val whitespaceType = definition.whitespaces
+    protected val commentType = definition.comments
 
     private fun findInitialState(entrance: NfaNode): Set<NfaNode> {
         return entrance.nodeEpsilonClosure()
@@ -49,14 +50,16 @@ abstract class NfaLexerBase<T>(definition: LexerDefinition<T>) : Lexer<T> {
 
     abstract fun postprocessNfa(nfa: Nfa)
 
-    override fun tokenize(text: CharSequence, skipWhitespace: Boolean): List<Token<T>> {
+    override fun tokenize(text: CharSequence, skipWhitespace: Boolean, skipComments: Boolean): List<Token<T>> {
         val tokens = mutableListOf<Token<T>>()
 
         var startIndex = 0
         while (true) {
-            val token = nextToken(startIndex, text)
-                    ?: break
-            if (!skipWhitespace || token.type != whitespaceType) {
+            val token = nextToken(startIndex, text) ?: break
+
+            if (
+                    !(skipWhitespace && token.type == whitespaceType || skipComments && token.type == commentType)
+            ) {
                 tokens.add(token)
             }
             val length = token.text.length

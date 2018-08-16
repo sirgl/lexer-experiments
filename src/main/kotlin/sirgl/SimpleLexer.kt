@@ -31,6 +31,7 @@ enum class SimpleTokenType {
 
 @Suppress("unused")
 object SimpleLexerDefinition : LexerDefinition<SimpleTokenType>() {
+    override val comments: SimpleTokenType = SimpleTokenType.Comment
     override val whitespaces: SimpleTokenType = SimpleTokenType.Space
     override val endLexeme: SimpleTokenType = SimpleTokenType.End
     private const val digits = "0123456789"
