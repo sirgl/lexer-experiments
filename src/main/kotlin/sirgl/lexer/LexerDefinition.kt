@@ -15,7 +15,7 @@ abstract class LexerDefinition {
 
     abstract val endLexeme: String
 
-    abstract val whitespaces: Set<String> // TODO maybe place here TokenSet
+    abstract val whitespaces: Set<String>
 
     abstract val comments: Set<String>
 
