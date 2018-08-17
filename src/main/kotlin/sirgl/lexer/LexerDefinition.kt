@@ -1,34 +1,45 @@
 package sirgl.lexer
 
+import sirgl.language.Language
 import sirgl.lexer.nfa.regex.RegexNode
 
 /**
  * Order of declarations is important, rule that declared first will win in equal other conditions
  */
-abstract class LexerDefinition<T> {
-    // Maybe not even T, but factory for T
-    val rules = mutableMapOf<RegexNode, T>()
+abstract class LexerDefinition {
+    val tokenNames = mutableSetOf<String>()
 
-    val externalLexers = mutableMapOf<ExternalTokenDescription, T>()
+    val rules = mutableMapOf<RegexNode, String>()
 
-    abstract val endLexeme: T
+    val externalLexers = mutableMapOf<ExternalLexerDescription, String>()
 
-    abstract val whitespaces: T // TODO maybe place here TokenSet
+    abstract val endLexeme: String
 
-    abstract val comments: T
+    abstract val whitespaces: Set<String> // TODO maybe place here TokenSet
 
-    fun regex(node: RegexNode, label: T): RegexNode {
-        rules[node] = label
-        return node
+    abstract val comments: Set<String>
+
+    abstract val language: Language
+
+    fun regex(node: RegexNode, tokenTypeName: String): String {
+        rules[node] = tokenTypeName
+        addTokenName(tokenTypeName)
+        return tokenTypeName
     }
 
-    fun externalLexer(startNode: RegexNode, externalLexer: ExternalLexer, label: T): ExternalLexer {
-        externalLexers[ExternalTokenDescription(startNode, externalLexer)] = label
-        return externalLexer
+    fun addTokenName(tokenTypeName: String) {
+        if (tokenNames.contains(tokenTypeName)) throw IllegalStateException("Name is not unique ($tokenTypeName) for language $language")
+        tokenNames.add(tokenTypeName)
+    }
+
+    fun externalLexer(startNode: RegexNode, externalLexer: ExternalLexer, tokenTypeName: String): String {
+        externalLexers[ExternalLexerDescription(startNode, externalLexer)] = tokenTypeName
+        addTokenName(tokenTypeName)
+        return tokenTypeName
     }
 }
 
-data class ExternalTokenDescription (
+data class ExternalLexerDescription (
         val startNode: RegexNode,
         val externalLexer: ExternalLexer
 )

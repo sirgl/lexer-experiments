@@ -4,37 +4,34 @@ import sirgl.lexer.*
 import sirgl.lexer.nfa.regex.EpsilonEdge
 import sirgl.lexer.nfa.regex.Nfa
 import sirgl.lexer.nfa.regex.NfaNode
-import sirgl.lexer.nfa.regex.nodeEpsilonClosure
 
-abstract class NfaLexerBase<T>(definition: LexerDefinition<T>) : Lexer<T> {
-    protected val indicesToTokens = hashMapOf<Int, T>()
-    protected val indicesToExternalLexer = hashMapOf<Int, ExternalLexer>()
-    protected val nfa = initNfa(definition)
-    protected val initialState = findInitialState(nfa.entrace)
-    protected var currentStates = initialState
-    protected val endToken = definition.endLexeme
-    protected val whitespaceType = definition.whitespaces
-    protected val commentType = definition.comments
+abstract class NfaLexerBase(definition: PreparedLexerDefinition, initialStateFinder: (Nfa) -> Set<NfaNode>) : Lexer {
+    // TODO replace with primitive collections
+    private val tokenTypes = definition.tokenTypes
+    private val indicesToExternalLexer = hashMapOf<Int, ExternalLexer>() // tokenIndex to external lexer
+    val nfa = initNfa(definition)
+    private val initialState = initialStateFinder(nfa)
+    private var currentStates = initialState
+    private val endToken = definition.endLexemes
+    private val whitespaceTokenTypes = definition.whitespaces
+    private val commentTypes = definition.comments
 
-    private fun findInitialState(entrance: NfaNode): Set<NfaNode> {
-        return entrance.nodeEpsilonClosure()
-    }
 
-    private fun initNfa(definition: LexerDefinition<T>): Nfa {
+    private fun initNfa(definition: PreparedLexerDefinition): Nfa {
         val rules = definition.rules.toMutableMap() // to copy
-        val externalTokenToLexer = hashMapOf<T, ExternalLexer>()
-        for ((description: ExternalTokenDescription, label: T) in definition.externalLexers) {
+        val externalTokenToLexer = hashMapOf<TokenType, ExternalLexer>()
+        for ((description, tokenType) in definition.externalLexers) {
             val (startNode, externalLexer) = description
-            rules[startNode] = label
-            externalTokenToLexer[label] = externalLexer
+            rules[startNode] = tokenType
+            externalTokenToLexer[tokenType] = externalLexer
         }
         var index = 0
         val start = NfaNode()
         val end = NfaNode()
-        for ((node, label) in rules) {
+        for ((node, tokenType) in rules) {
             val nfa = node.buildNFA()
-            indicesToTokens[index] = label
-            val externalLexer = externalTokenToLexer[label]
+            tokenTypes[index] = tokenType
+            val externalLexer = externalTokenToLexer[tokenType]
             if (externalLexer != null) {
                 indicesToExternalLexer[index] = externalLexer
             }
@@ -50,16 +47,18 @@ abstract class NfaLexerBase<T>(definition: LexerDefinition<T>) : Lexer<T> {
 
     abstract fun postprocessNfa(nfa: Nfa)
 
-    override fun tokenize(text: CharSequence, skipWhitespace: Boolean, skipComments: Boolean): List<Token<T>> {
-        val tokens = mutableListOf<Token<T>>()
+
+    override fun tokenize(text: CharSequence, skipWhitespace: Boolean, skipComments: Boolean): List<Token> {
+        val tokens = mutableListOf<Token>()
 
         var startIndex = 0
         while (true) {
             val token = nextToken(startIndex, text) ?: break
 
-            if (
-                    !(skipWhitespace && token.type == whitespaceType || skipComments && token.type == commentType)
-            ) {
+            val tokenType = token.type
+            // TODO precompute set to check at once spaces and comments
+            if (!(skipWhitespace && whitespaceTokenTypes.match(tokenType)
+                            || skipComments && commentTypes.match(tokenType))) {
                 tokens.add(token)
             }
             val length = token.text.length
@@ -70,7 +69,7 @@ abstract class NfaLexerBase<T>(definition: LexerDefinition<T>) : Lexer<T> {
         return tokens
     }
 
-    private fun nextToken(startIndex: Int, text: CharSequence): Token<T>? {
+    private fun nextToken(startIndex: Int, text: CharSequence): Token? {
         var index = startIndex
         val length = text.length
         val candidateInfo = CandidateInfo()
@@ -102,8 +101,7 @@ abstract class NfaLexerBase<T>(definition: LexerDefinition<T>) : Lexer<T> {
         currentStates = initialState
         if (!candidateInfo.isMeaningful()) return null
         val tokenText = text.subSequence(startIndex, candidateInfo.endNodeIndex)
-        val tokenType = indicesToTokens[candidateInfo.tokenTypeIndex]
-                ?: throw IllegalStateException("Unexpected token index ${candidateInfo.tokenTypeIndex}")
+        val tokenType = tokenTypes[candidateInfo.tokenTypeIndex]
         return Token(tokenText, tokenType)
     }
 
@@ -146,4 +144,3 @@ class CandidateInfo {
         return endNodeIndex != -1 || tokenTypeIndex != Int.MAX_VALUE
     }
 }
-

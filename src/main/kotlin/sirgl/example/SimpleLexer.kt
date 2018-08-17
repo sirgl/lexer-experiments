@@ -1,53 +1,32 @@
-package sirgl
+package sirgl.example
 
+import sirgl.language.Language
 import sirgl.lexer.ExternalLexer
 import sirgl.lexer.LexerDefinition
 import sirgl.lexer.nfa.regex.*
 
 
-enum class SimpleTokenType {
-    IntegralNumber,
-    FixedPointNumber,
-    Space,
-    Error,
-    Identifier,
-    FunKw,
-    ValKw,
-    LPar,
-    RPar,
-    LCurly,
-    RCurly,
-    Plus,
-    Minus,
-    Div,
-    Asterisk,
-    Semi,
-    Colon,
-    Comma,
-    Eq,
-    End,
-    Comment,
-}
+private const val digits = "0123456789"
+private const val letters = "abcdefghigklmnopqrstuvwxyz"
 
 @Suppress("unused")
-object SimpleLexerDefinition : LexerDefinition<SimpleTokenType>() {
-    override val comments: SimpleTokenType = SimpleTokenType.Comment
-    override val whitespaces: SimpleTokenType = SimpleTokenType.Space
-    override val endLexeme: SimpleTokenType = SimpleTokenType.End
-    private const val digits = "0123456789"
-    private const val letters = "abcdefghigklmnopqrstuvwxyz"
+class SimpleLexerDefinition(override val language: Language) : LexerDefinition() {
+    override val comments = setOf(SimpleTokenNames.comment)
+    override val whitespaces = setOf(SimpleTokenNames.space)
+    override val endLexeme = SimpleTokenNames.endToken
+
     private val identifierNonFirstLetters = letters + letters.toUpperCase() + digits
 
     // Keywords
 
     private val functionKw = regex(
             keyword("fun"),
-            SimpleTokenType.FunKw
+            SimpleTokenNames.funKw
     )
 
     private val valKw = regex(
             keyword("val"),
-            SimpleTokenType.ValKw
+            SimpleTokenNames.valKw
     )
 
     // Keywords end
@@ -57,69 +36,69 @@ object SimpleLexerDefinition : LexerDefinition<SimpleTokenType>() {
 
     private val lPar = regex(
             keyword("("),
-            SimpleTokenType.LPar
+            SimpleTokenNames.lPar
     )
 
     private val rPar = regex(
             keyword(")"),
-            SimpleTokenType.RPar
+            SimpleTokenNames.rPar
     )
 
     private val lcurly = regex(
             keyword("{"),
-            SimpleTokenType.LCurly
+            SimpleTokenNames.lCurly
     )
 
     private val rCurly = regex(
             keyword("}"),
-            SimpleTokenType.RCurly
+            SimpleTokenNames.rCurly
     )
 
     private val plus = regex(
             keyword("+"),
-            SimpleTokenType.Plus
+            SimpleTokenNames.plus
     )
 
     private val minus = regex(
             keyword("-"),
-            SimpleTokenType.Minus
+            SimpleTokenNames.minus
     )
 
     private val asterisk = regex(
             keyword("*"),
-            SimpleTokenType.Asterisk
+            SimpleTokenNames.asterisk
     )
 
     private val div = regex(
             keyword("/"),
-            SimpleTokenType.Div
+            SimpleTokenNames.div
     )
 
     private val semi = regex(
             keyword(";"),
-            SimpleTokenType.Semi
+            SimpleTokenNames.semi
     )
 
     private val colon = regex(
             keyword(":"),
-            SimpleTokenType.Colon
+            SimpleTokenNames.colon
     )
 
     private val comma = regex(
             keyword(","),
-            SimpleTokenType.Colon
+            SimpleTokenNames.comma
     )
 
     private val eq = regex(
             keyword("="),
-            SimpleTokenType.Eq
+            SimpleTokenNames.eq
     )
 
     // Punctuation signs end
 
     private val integralNumber = regex(
             RepeatOneOrMoreNode(CharsNode(digits)),
-            SimpleTokenType.IntegralNumber
+            SimpleTokenNames.integralNumber
     )
 
     private val fixedPointNumber = regex(
@@ -128,12 +107,12 @@ object SimpleLexerDefinition : LexerDefinition<SimpleTokenType>() {
                     CharNode('.'),
                     RepeatOneOrMoreNode(CharsNode(digits))
             )),
-            SimpleTokenType.FixedPointNumber
+            SimpleTokenNames.fixedPointNumber
     )
 
     private val spaces = regex(
             RepeatOneOrMoreNode(CharsNode(" \n\t")),
-            SimpleTokenType.Space
+            SimpleTokenNames.space
     )
 
     private val identifier = regex(
@@ -141,7 +120,7 @@ object SimpleLexerDefinition : LexerDefinition<SimpleTokenType>() {
                     CharsNode(letters + letters.toUpperCase()),
                     RepeatZeroOrMoreNode(CharsNode(identifierNonFirstLetters))
             )),
-            SimpleTokenType.Identifier
+            SimpleTokenNames.identifier
     )
 
     // /* /* */ */  -- it should be considered as a single token
@@ -176,12 +155,12 @@ object SimpleLexerDefinition : LexerDefinition<SimpleTokenType>() {
                     return null
                 }
             },
-            SimpleTokenType.Comment
+            SimpleTokenNames.comment
     )
 
     private val errorElement = regex(
             AnyNode(),
-            SimpleTokenType.Error
+            SimpleTokenNames.error
     )
 
 

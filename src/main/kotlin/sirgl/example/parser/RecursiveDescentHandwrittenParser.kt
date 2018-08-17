@@ -1,9 +1,10 @@
-package sirgl.parser
+package sirgl.example.parser
 
-import sirgl.SimpleTokenType
 import sirgl.ast.*
 import sirgl.ast.Function
+import sirgl.example.SimpleTokenTypes
 import sirgl.lexer.Token
+import sirgl.lexer.TokenType
 
 
 class ParseException(reason: String) : Exception(reason)
@@ -12,28 +13,28 @@ class ParseException(reason: String) : Exception(reason)
 
 // functions expects, that conditions to parse what function represents already checked.
 // no error recovery provided
-class RecursiveDescentHandwrittenParser : Parser() {
-    override fun parse(tokens: List<Token<SimpleTokenType>>): Function {
-        return ParserState(tokens).parse()
+class RecursiveDescentHandwrittenParser(private val tokenTypes: SimpleTokenTypes) : Parser() {
+    override fun parse(tokens: List<Token>): Function {
+        return ParserState(tokens, tokenTypes).parse()
     }
 }
 
-private class ParserState(private val tokens: List<Token<SimpleTokenType>>) {
+private class ParserState(private val tokens: List<Token>, val tokenTypes: SimpleTokenTypes) {
     var position: Int = 0
 
     fun parse(): Function {
         val function = function()
-        if (!at(SimpleTokenType.End)) fail("End expected")
+        if (!at(tokenTypes.end)) fail("End expected")
         return function
     }
 
     // Service functions
 
-    fun current(): Token<SimpleTokenType> {
+    fun current(): Token {
         return tokens[position]
     }
 
-    fun advance(): Token<SimpleTokenType> {
+    fun advance(): Token {
         val token = tokens[position]
         position++
         return token
@@ -43,35 +44,35 @@ private class ParserState(private val tokens: List<Token<SimpleTokenType>>) {
         throw ParseException(reason)
     }
 
-    fun expect(type: SimpleTokenType): Token<SimpleTokenType> {
+    fun expect(type: TokenType): Token {
         if (!at(type)) fail("Expected $type, but was ${current().type}")
         return advance()
     }
 
     // checks
-    fun at(type: SimpleTokenType): Boolean {
+    fun at(type: TokenType): Boolean {
         return current().type == type
     }
 
     // Rules
 
     private fun function(): Function {
-        expect(SimpleTokenType.FunKw)
-        val name = expect(SimpleTokenType.Identifier).text
+        expect(tokenTypes.funKw)
+        val name = expect(tokenTypes.identifier).text
         val parameterList = parameterList()
         val block = block()
         return Function(name.toString(), parameterList, BlockStmt(block))
     }
 
     private fun parameterList(): ParameterList {
-        expect(SimpleTokenType.LPar)
+        expect(tokenTypes.lPar)
         var first = true
         val parameters = mutableListOf<Parameter>()
-        while (!at(SimpleTokenType.RPar)) {
+        while (!at(tokenTypes.rPar)) { // TokenType required before
             if (first) {
                 first = false
             } else {
-                expect(SimpleTokenType.Comma)
+                expect(tokenTypes.comma)
             }
             parameters.add(parameter())
         }
@@ -80,64 +81,64 @@ private class ParserState(private val tokens: List<Token<SimpleTokenType>>) {
     }
 
     private fun block(): Block {
-        expect(SimpleTokenType.LCurly)
+        expect(tokenTypes.lCurly)
         val stmts = mutableListOf<Stmt>()
-        while (!at(SimpleTokenType.RCurly)) {
+        while (!at(tokenTypes.rCurly)) {
             stmts.add(stmt())
         }
-        expect(SimpleTokenType.RCurly)
+        expect(tokenTypes.rCurly)
         return Block(stmts)
     }
 
     private fun expr(): Expr {
         val type = current().type
         return when (type) {
-            SimpleTokenType.IntegralNumber -> numberLiteral()
+            tokenTypes.integralNumber -> numberLiteral()
             else -> fail("Expression expected, but found $type")
         }
     }
 
     private fun numberLiteral() : NumberLiteral {
-        return NumberLiteral(expect(SimpleTokenType.IntegralNumber).text.toString().toInt())
+        return NumberLiteral(expect(tokenTypes.integralNumber).text.toString().toInt())
     }
 
     private fun exprStmt() : ExprStmt {
         val expr = expr()
-        expect(SimpleTokenType.Semi)
+        expect(tokenTypes.semi)
         return ExprStmt(expr)
     }
 
     private fun stmt(): Stmt {
         return when (current().type) {
-            SimpleTokenType.ValKw -> declStmt()
+            tokenTypes.valKw -> declStmt()
             else -> exprStmt()
         }
 
     }
 
     private fun declStmt(): DeclStmt {
-        expect(SimpleTokenType.ValKw)
-        val name = expect(SimpleTokenType.Identifier).text.toString()
-        expect(SimpleTokenType.Colon)
+        expect(tokenTypes.valKw)
+        val name = expect(tokenTypes.identifier).text.toString()
+        expect(tokenTypes.colon)
         val typeElement = typeElement()
-        val initializer = if (at(SimpleTokenType.Eq)) {
+        val initializer = if (at(tokenTypes.eq)) {
             advance()
             expr()
         } else {
             null
         }
-        expect(SimpleTokenType.Semi)
+        expect(tokenTypes.semi)
         return DeclStmt(name, typeElement, initializer)
     }
 
     private fun parameter(): Parameter {
-        val name = expect(SimpleTokenType.Identifier).text.toString()
-        expect(SimpleTokenType.Colon)
+        val name = expect(tokenTypes.identifier).text.toString()
+        expect(tokenTypes.colon)
         val typeElement = typeElement()
         return Parameter(name, typeElement)
     }
 
     private fun typeElement(): TypeElement {
-        return TypeElement(expect(SimpleTokenType.Identifier).text.toString())
+        return TypeElement(expect(tokenTypes.identifier).text.toString())
     }
 }
