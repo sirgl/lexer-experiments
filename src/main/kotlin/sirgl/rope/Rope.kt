@@ -1,6 +1,6 @@
 package sirgl.rope
 
-import java.util.NoSuchElementException
+import java.util.*
 
 // Immutable structure
 class Rope(var root: Node) : CharSequence {
@@ -32,6 +32,7 @@ class Rope(var root: Node) : CharSequence {
      * [startIndex] inclusive
      * [endIndex] exclusive
      */
+    @Suppress("UNUSED_VARIABLE")
     fun subRope(startIndex: Int, endIndex: Int): Rope {
         if (startIndex > endIndex) {
             throw IllegalArgumentException("end index ($endIndex) is less than start index ($startIndex)")
@@ -43,9 +44,9 @@ class Rope(var root: Node) : CharSequence {
         return inner
     }
 
-    operator fun plus(another: CharSequence) : Rope {
+    operator fun plus(another: CharSequence): Rope {
         if (another is Rope) {
-            return Rope(Inner(root, another.root))
+            return concatDirect(another)
         }
         if (another is String) {
             return Rope(Inner(root, Leaf(another.toCharArray())))
@@ -59,7 +60,7 @@ class Rope(var root: Node) : CharSequence {
         }
     }
 
-    fun leafs()  = Leafs(root)
+    fun leafs() = Leafs(root)
 
     fun splitByIndex(index: Int): Pair<Rope, Rope> {
         val correctedIndex = when {
@@ -70,15 +71,42 @@ class Rope(var root: Node) : CharSequence {
         val res = splitByIndex(root, correctedIndex)
         return Rope(res.first) to Rope(res.second)
     }
+
+    fun concatDirect(another: Rope): Rope {
+        return Rope(Inner(root, another.root))
+    }
+
+    fun delete(startIndexIncl: Int, endIndexExcl: Int): Rope {
+        if (startIndexIncl > endIndexExcl) {
+            throw IllegalArgumentException("end index ($endIndexExcl) is less than start index ($startIndexIncl)")
+        }
+        val start = truncate(startIndexIncl, length)
+        val end = truncate(endIndexExcl, length)
+        val (beforeStart, afterStart) = splitByIndex(start)
+        val (_, afterEnd) = afterStart.splitByIndex(end)
+        return beforeStart.concatDirect(afterEnd)
+    }
+
+    fun delete(charIndex: Int): Rope {
+        return delete(charIndex, charIndex + 1)
+    }
+
+    /**
+     * Insert after given [index] text from [text]
+     */
+    fun insert(index: Int, text: CharSequence): Rope {
+        val (before, after) = splitByIndex(index)
+        return before + text + after
+    }
 }
 
-sealed class Node (
+sealed class Node(
         var left: Node?,
         var right: Node?,
         var length: Int,
         var parent: Node? = null
 ) {
-     fun getTheOnlyChild(): Node? {
+    fun getTheOnlyChild(): Node? {
         this as? Inner ?: return null
         val left = left
         val right = right
@@ -95,7 +123,8 @@ class Leaf(var chars: CharArray) : Node(null, null, chars.size) {
 }
 
 
-class Inner(left: Node?, right: Node?, length: Int = (left?.length ?: 0) + (right?.length ?: 0)) : Node(left, right, length) {
+class Inner(left: Node?, right: Node?, length: Int = (left?.length ?: 0) + (right?.length
+        ?: 0)) : Node(left, right, length) {
     init {
         left?.parent = this
         right?.parent = this
@@ -128,13 +157,13 @@ class LeafIterator(current: Leaf) : Iterator<Leaf> {
         return current ?: throw NoSuchElementException()
     }
 
-    private fun getNext() : Leaf? {
+    private fun getNext(): Leaf? {
         val top = goUp(current ?: return null) ?: return null
         return getLeftDownLeaf(top)
     }
 
     // rise until node where current (lower) node is at the left side (if no parent - return null)
-    private fun goUp(node: Node) : Node? {
+    private fun goUp(node: Node): Node? {
         var current: Node = node
         while (true) {
             val parent = current.parent ?: return null
@@ -147,7 +176,7 @@ class LeafIterator(current: Leaf) : Iterator<Leaf> {
 }
 
 // get down choosing always left
-private fun getLeftDownLeaf(node: Node) : Leaf {
+private fun getLeftDownLeaf(node: Node): Leaf {
     var current = node
     while (current !is Leaf) {
         // Inner can have less than 2 nodes
@@ -163,7 +192,7 @@ class Leafs(private val root: Node) : Iterable<Leaf> {
     }
 }
 
-internal fun splitByIndex(node: Node, index: Int) : Pair<Node, Node> {
+internal fun splitByIndex(node: Node, index: Int): Pair<Node, Node> {
     val tree1: Node
     val tree2: Node
     val nodeLeft = node.left
@@ -186,7 +215,7 @@ internal fun splitByIndex(node: Node, index: Int) : Pair<Node, Node> {
     return (tree1.getTheOnlyChild() ?: tree1) to (tree2.getTheOnlyChild() ?: tree2)
 }
 
-private fun truncate(value: Int, max: Int) : Int {
+private fun truncate(value: Int, max: Int): Int {
     return when {
         value < 0 -> 0
         value >= max -> max

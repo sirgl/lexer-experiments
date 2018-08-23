@@ -1,29 +1,29 @@
 package sirgl.rope
 
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class RopeTest {
     @Test
     fun `access flat by index`() {
-        Assertions.assertEquals('f', Rope("foo")[0])
+        assertEquals('f', Rope("foo")[0])
     }
 
     @Test
     fun `flat length`() {
-        Assertions.assertEquals(3, Rope("foo").length)
+        assertEquals(3, Rope("foo").length)
     }
 
     @Test
     fun `concat length`() {
         val rope = Rope("foo") + Rope("bar")
-        Assertions.assertEquals(6, rope.length)
+        assertEquals(6, rope.length)
     }
 
     @Test
     fun concat() {
         val rope = Rope("foo") + Rope("bar")
-        Assertions.assertEquals("foobar", rope.toString())
+        assertEquals("foobar", rope.toString())
     }
 
     @Test
@@ -33,7 +33,7 @@ class RopeTest {
         val n1234 = n12 + n34
         val n56 = Rope("5") + Rope("6")
         val rope = n1234 + n56
-        Assertions.assertEquals("1, 2, 3, 4, 5, 6", rope.leafs().joinToString(", "))
+        assertEquals("1, 2, 3, 4, 5, 6", rope.leafs().joinToString(", "))
     }
 
 
@@ -69,16 +69,36 @@ class RopeTest {
 
     @Test
     fun `iterator single node`() {
-        Assertions.assertEquals("a", Rope("a").leafs().joinToString(", "))
+        assertEquals("a", Rope("a").leafs().joinToString(", "))
     }
 
     @Test
     fun `subRope test 1`() {
-        Assertions.assertEquals("12233", createTestRope().subRope(1, 6).toString())
+        assertEquals("12233", createTestRope().subRope(1, 6).toString())
     }
+
     @Test
     fun `subRope test 2`() {
-        Assertions.assertEquals("112", createTestRope().subRope(0, 3).toString())
+        assertEquals("112", createTestRope().subRope(0, 3).toString())
+    }
+
+    @Test
+    fun `delete test`() {
+        val text = createTestRope().delete(1, 3).toString()
+        assertEquals("133445566", text)
+    }
+
+    @Test
+    fun `delete single test`() {
+        val text = createTestRope().delete(1).toString()
+        assertEquals("1233445566", text)
+    }
+
+
+    @Test
+    fun `insert test`() {
+        val text = createTestRope().insert(1, "foo").toString()
+        assertEquals("1foo12233445566", text)
     }
 
     private fun createTestRope(): Rope {
@@ -93,13 +113,13 @@ class RopeTest {
         val start = rope.toString().substring(0, index)
         val end = rope.toString().substring(index)
         val (rope1, rope2) = rope.splitByIndex(index)
-        Assertions.assertEquals(start, rope1.toString())
-        Assertions.assertEquals(end, rope2.toString())
+        assertEquals(start, rope1.toString())
+        assertEquals(end, rope2.toString())
     }
 
     private fun splitIterationTest(index: Int, rope: Rope, start: String, end: String) {
         val (rope1, rope2) = rope.splitByIndex(index)
-        Assertions.assertEquals(start, rope1.leafs().joinToString(", "), "Start incorrect")
-        Assertions.assertEquals(end, rope2.leafs().joinToString(", "), "End incorrect")
+        assertEquals(start, rope1.leafs().joinToString(", "), "Start incorrect")
+        assertEquals(end, rope2.leafs().joinToString(", "), "End incorrect")
     }
 }
