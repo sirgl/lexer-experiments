@@ -1,6 +1,7 @@
 package sirgl.lexer.nfa.regex
 
 import sirgl.common.IntList
+import sirgl.lexer.escape
 
 
 class Nfa(val entrace: NfaNode, val exit: NfaNode)
@@ -113,16 +114,25 @@ class EpsilonEdge(end: NfaNode) : NfaEdge(end) {
 
 class CharEdge(end: NfaNode, private val myCodePoint: Int) : StableEdge(end) {
     override val drawingAttribute: String
-        get() = "[label=\"${String(Character.toChars(myCodePoint))}\"]"
+        get() = "[label=\"${String(Character.toChars(myCodePoint)).escape()}\"]"
 
     override fun matches(codePoint: Int): Boolean = codePoint == myCodePoint
 }
 
 class CharsEdge(end: NfaNode, private val codePoints: IntList) : StableEdge(end) {
     override val drawingAttribute: String
-        get() = "[label=\"${codePoints.toCharString()}\"]"
+        get() = "[label=\"${codePoints.toCharString().escape()}\"]"
 
     override fun matches(codePoint: Int): Boolean = codePoint in codePoints
+}
+
+class NotEdge(end: NfaNode, private val edge: StableEdge) : StableEdge(end) {
+    override val drawingAttribute: String
+        get() = "[label=\"<Inverted>\"]"
+
+    override fun matches(codePoint: Int): Boolean {
+        return !edge.matches(codePoint)
+    }
 }
 
 class AnyEdge(end: NfaNode) : StableEdge(end) {

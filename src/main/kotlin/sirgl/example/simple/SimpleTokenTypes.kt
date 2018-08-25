@@ -1,4 +1,4 @@
-package sirgl.example
+package sirgl.example.simple
 
 import sirgl.lexer.TokenTypeFactory
 

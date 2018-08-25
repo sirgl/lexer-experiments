@@ -54,8 +54,21 @@ class ChoiceNode(private val nodes: List<RegexNode>) : RegexNode() {
             val nodeNfa = node.buildNFA()
             val nodeEntrance = nodeNfa.entrace
             start.edges.add(EpsilonEdge(nodeEntrance))
-            nodeEntrance.edges.add(EpsilonEdge(end))
+            nodeNfa.exit.edges.add(EpsilonEdge(end))
         }
+        return Nfa(start, end)
+    }
+}
+
+
+class OptionalNode(val node: RegexNode) : RegexNode() {
+    override fun buildNFA(): Nfa {
+        val start = NfaNode()
+        val end = NfaNode()
+        val nfa = node.buildNFA()
+        start.edges.add(EpsilonEdge(end))
+        start.edges.add(EpsilonEdge(nfa.entrace))
+        nfa.exit.edges.add(EpsilonEdge(end))
         return Nfa(start, end)
     }
 }
@@ -78,6 +91,19 @@ class SequenceNode(private val nodes: List<RegexNode>) : RegexNode() {
         return Nfa(start, end)
     }
 
+}
+
+// TODO invert single character
+class InvertedCharsNode(private val codePoints: IntList) : RegexNode() {
+    constructor(codePointString: String) : this(
+            IntList(codePointString.codePoints().toArray())
+    )
+
+    override fun buildNFA(): Nfa {
+        val end = NfaNode()
+        val start = NfaNode(mutableListOf(NotEdge(end, CharsEdge(end, codePoints))))
+        return Nfa(start, end)
+    }
 }
 
 class CharsNode(private val codePoints: IntList) : RegexNode() {

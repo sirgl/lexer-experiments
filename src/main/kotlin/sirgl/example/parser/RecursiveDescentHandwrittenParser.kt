@@ -2,7 +2,7 @@ package sirgl.example.parser
 
 import sirgl.ast.*
 import sirgl.ast.Function
-import sirgl.example.SimpleTokenTypes
+import sirgl.example.simple.SimpleTokenTypes
 import sirgl.lexer.Token
 import sirgl.lexer.TokenType
 

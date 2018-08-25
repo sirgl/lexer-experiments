@@ -28,7 +28,8 @@ abstract class LexerDefinition {
     }
 
     fun addTokenName(tokenTypeName: String) {
-        if (tokenNames.contains(tokenTypeName)) throw IllegalStateException("Name is not unique ($tokenTypeName) for language $language")
+        if (tokenNames.contains(tokenTypeName))
+            throw IllegalStateException("Name is not unique ($tokenTypeName) for language $language")
         tokenNames.add(tokenTypeName)
     }
 

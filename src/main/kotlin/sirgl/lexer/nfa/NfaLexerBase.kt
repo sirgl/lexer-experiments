@@ -1,5 +1,7 @@
 package sirgl.lexer.nfa
 
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import sirgl.lexer.*
 import sirgl.lexer.nfa.regex.EpsilonEdge
 import sirgl.lexer.nfa.regex.Nfa
@@ -48,7 +50,7 @@ abstract class NfaLexerBase(definition: PreparedLexerDefinition, initialStateFin
     abstract fun postprocessNfa(nfa: Nfa)
 
 
-    override fun tokenize(text: CharSequence, skipWhitespace: Boolean, skipComments: Boolean): List<Token> {
+    override fun tokenizeAll(text: CharSequence, skipWhitespace: Boolean, skipComments: Boolean): List<Token> {
         val tokens = mutableListOf<Token>()
 
         var startIndex = 0

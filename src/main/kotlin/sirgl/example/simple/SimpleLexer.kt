@@ -1,4 +1,4 @@
-package sirgl.example
+package sirgl.example.simple
 
 import sirgl.language.Language
 import sirgl.lexer.ExternalLexer

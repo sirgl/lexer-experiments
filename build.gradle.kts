@@ -9,10 +9,14 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    maven {
+        setUrl( "http://dl.bintray.com/kotlin/kotlinx")
+    }
 }
 
 dependencies {
     compile(kotlin("stdlib-jdk8"))
+    compile("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.1")
 //    compile("org.junit:junit-4.12")
     testCompile("org.junit.jupiter:junit-jupiter-api:5.0.3")
     testCompile("org.junit.jupiter:junit-jupiter-engine:5.0.3")
