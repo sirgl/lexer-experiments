@@ -14,13 +14,14 @@ class ParseException(reason: String) : Exception(reason)
 // functions expects, that conditions to parse what function represents already checked.
 // no error recovery provided
 class RecursiveDescentHandwrittenParser(private val tokenTypes: SimpleTokenTypes) : Parser() {
-    override fun parse(tokens: List<Token>): Function {
-        return ParserState(tokens, tokenTypes).parse()
+    override fun parse(tokens: List<Token>, text: CharSequence): Function {
+        return ParserState(tokens, text, tokenTypes).parse()
     }
 }
 
-private class ParserState(private val tokens: List<Token>, val tokenTypes: SimpleTokenTypes) {
+private class ParserState(private val tokens: List<Token>, private val text: CharSequence, val tokenTypes: SimpleTokenTypes) {
     var position: Int = 0
+    private var textPosition = 0
 
     fun parse(): Function {
         val function = function()
@@ -34,10 +35,17 @@ private class ParserState(private val tokens: List<Token>, val tokenTypes: Simpl
         return tokens[position]
     }
 
+    // use only this function to advance in token stream
     fun advance(): Token {
         val token = tokens[position]
         position++
+        textPosition += token.length
         return token
+    }
+
+    fun currentTokenText() : CharSequence {
+        val length = current().length
+        return text.subSequence(textPosition, textPosition + length)
     }
 
     fun fail(reason: String) : Nothing {
@@ -58,7 +66,8 @@ private class ParserState(private val tokens: List<Token>, val tokenTypes: Simpl
 
     private fun function(): Function {
         expect(tokenTypes.funKw)
-        val name = expect(tokenTypes.identifier).text
+        expect(tokenTypes.identifier)
+        val name = currentTokenText()
         val parameterList = parameterList()
         val block = block()
         return Function(name.toString(), parameterList, BlockStmt(block))
@@ -99,7 +108,8 @@ private class ParserState(private val tokens: List<Token>, val tokenTypes: Simpl
     }
 
     private fun numberLiteral() : NumberLiteral {
-        return NumberLiteral(expect(tokenTypes.integralNumber).text.toString().toInt())
+        expect(tokenTypes.integralNumber)
+        return NumberLiteral(currentTokenText().toString().toInt())
     }
 
     private fun exprStmt() : ExprStmt {
@@ -118,7 +128,8 @@ private class ParserState(private val tokens: List<Token>, val tokenTypes: Simpl
 
     private fun declStmt(): DeclStmt {
         expect(tokenTypes.valKw)
-        val name = expect(tokenTypes.identifier).text.toString()
+        expect(tokenTypes.identifier)
+        val name = currentTokenText().toString()
         expect(tokenTypes.colon)
         val typeElement = typeElement()
         val initializer = if (at(tokenTypes.eq)) {
@@ -132,13 +143,15 @@ private class ParserState(private val tokens: List<Token>, val tokenTypes: Simpl
     }
 
     private fun parameter(): Parameter {
-        val name = expect(tokenTypes.identifier).text.toString()
+        expect(tokenTypes.identifier)
+        val name = currentTokenText().toString()
         expect(tokenTypes.colon)
         val typeElement = typeElement()
         return Parameter(name, typeElement)
     }
 
     private fun typeElement(): TypeElement {
-        return TypeElement(expect(tokenTypes.identifier).text.toString())
+        expect(tokenTypes.identifier)
+        return TypeElement(currentTokenText().toString())
     }
 }

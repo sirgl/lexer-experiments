@@ -1,11 +1,11 @@
 package sirgl.lexer
 
-data class Token(val text: CharSequence, val type: TokenType) {
+data class Token(val length: Int, val type: TokenType) {
     override fun toString(): String {
-        return "Token(text=\"${text.escape()}\", type=$type)"
+        return "Token(length=\"$length\", type=$type)"
     }
 
-    fun pretty() : String = "$type@\"${text.escape()}\""
+    fun pretty(text: CharSequence) : String = "$type@\"${text.escape()}\""
 }
 
 fun CharSequence.escape() : CharSequence {
@@ -20,4 +20,8 @@ fun CharSequence.escape() : CharSequence {
             }
         }
     }
+}
+
+fun Token.textFromPosition(fullText: CharSequence, offset: Int) : CharSequence {
+    return fullText.subSequence(offset, offset + length)
 }

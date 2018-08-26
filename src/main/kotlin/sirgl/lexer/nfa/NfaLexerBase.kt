@@ -50,24 +50,18 @@ abstract class NfaLexerBase(definition: PreparedLexerDefinition, initialStateFin
     abstract fun postprocessNfa(nfa: Nfa)
 
 
-    override fun tokenizeAll(text: CharSequence, skipWhitespace: Boolean, skipComments: Boolean): List<Token> {
+    override fun tokenizeAll(text: CharSequence): List<Token> {
         val tokens = mutableListOf<Token>()
 
         var startIndex = 0
         while (true) {
             val token = nextToken(startIndex, text) ?: break
-
-            val tokenType = token.type
-            // TODO precompute set to check at once spaces and comments
-            if (!(skipWhitespace && whitespaceTokenTypes.match(tokenType)
-                            || skipComments && commentTypes.match(tokenType))) {
-                tokens.add(token)
-            }
-            val length = token.text.length
-            if (length == 0) break
+            tokens.add(token)
+            val length = token.length
+            if (length == 0) break // only end type can have zero size
             startIndex += length
         }
-        tokens.add(Token("<end>", endToken))
+        tokens.add(Token(0, endToken))
         return tokens
     }
 
@@ -102,9 +96,8 @@ abstract class NfaLexerBase(definition: PreparedLexerDefinition, initialStateFin
         }
         currentStates = initialState
         if (!candidateInfo.isMeaningful()) return null
-        val tokenText = text.subSequence(startIndex, candidateInfo.endNodeIndex)
         val tokenType = tokenTypes[candidateInfo.tokenTypeIndex]
-        return Token(tokenText, tokenType)
+        return Token(candidateInfo.endNodeIndex - startIndex, tokenType)
     }
 
     abstract fun match(node: NfaNode, codePoint: Int): Collection<NfaNode>

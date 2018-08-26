@@ -14,7 +14,7 @@ class LexerTest {
     fun whitespace() {
         testLexers(lexers, "  \r\n", """
 whitespace@"  \r\n"
-<end>@"<end>"
+<end>@""
 """.trim(), false, true)
     }
 
@@ -24,7 +24,7 @@ whitespace@"  \r\n"
 whitespace@" "
 identifier@"foo"
 whitespace@"  \r\n"
-<end>@"<end>"
+<end>@""
 """.trim(), false, true)
     }
 
@@ -34,7 +34,7 @@ whitespace@"  \r\n"
             // asdsakdjasd ываодылв/%kasd
         """.trimIndent(), """
 endOfLineComment@"// asdsakdjasd ываодылв/%kasd"
-<end>@"<end>"
+<end>@""
 """.trim(), false, false)
     }
 
@@ -44,7 +44,7 @@ endOfLineComment@"// asdsakdjasd ываодылв/%kasd"
             /* /* asd */ **/
         """.trimIndent(), """
 traditionalComment@"/* /* asd */ **/"
-<end>@"<end>"
+<end>@""
 """.trim(), false, false)
     }
 
@@ -56,7 +56,7 @@ traditionalComment@"/* /* asd */ **/"
 identifier@"foo"
 whitespace@" "
 identifier@"test123"
-<end>@"<end>"
+<end>@""
 """.trim(), false, false)
     }
 
@@ -68,7 +68,7 @@ identifier@"test123"
 true@"true"
 whitespace@" "
 false@"false"
-<end>@"<end>"
+<end>@""
 """.trim(), false, false)
     }
 
@@ -80,7 +80,7 @@ false@"false"
 class@"class"
 finally@"finally"
 abstract@"abstract"
-<end>@"<end>"
+<end>@""
 """.trim(), true, false)
     }
 
@@ -95,7 +95,7 @@ integerLiteral@"55L"
 integerLiteral@"0x7fff_ffff"
 integerLiteral@"0"
 integerLiteral@"b0111_1111_1111_1111_1111_1111_1111_1111"
-<end>@"<end>"
+<end>@""
 """.trim(), true, false)
     }
 
@@ -118,7 +118,7 @@ floatLiteral@"0.0"
 floatLiteral@"3.14"
 floatLiteral@"1e-9d"
 floatLiteral@"1e137"
-<end>@"<end>"
+<end>@""
 """.trim(), true, false)
     }
 
@@ -128,7 +128,7 @@ floatLiteral@"1e137"
             'a'
         """.trimIndent(), """
 charLiteral@"'a'"
-<end>@"<end>"
+<end>@""
 """.trim(), true, false)
     }
 
@@ -139,7 +139,7 @@ charLiteral@"'a'"
         """.trimIndent(), """
 stringLiteral@""asdas""
 stringLiteral@""\""${'"'}
-<end>@"<end>"
+<end>@""
 """.trim(), true, false)
     }
 
@@ -150,9 +150,32 @@ stringLiteral@""\""${'"'}
             skipWhitespace: Boolean,
             skipComments: Boolean
     ) {
+        val definition = createJavaLexerDefinition(Language("java", 100))
+        definition.comments // dirty hack
         for (lexer in lexers) {
-            val tokens = lexer.tokenizeAll(text, skipWhitespace, skipComments)
-            Assertions.assertEquals(tokenText, tokens.joinToString("\n") { it.pretty() })
+            val tokens = lexer.tokenizeAll(text)
+            var position = 0
+            val tokenToText = tokens.asSequence().map {
+                val txt = it.textFromPosition(text, position)
+                position += it.length
+                it to txt
+            }
+            Assertions.assertEquals(tokenText, tokenToText.filter {
+                val type = it.first.type
+                if (skipComments) {
+                    if (type.name in definition.comments) {
+                        return@filter false
+                    }
+                }
+                if (skipWhitespace) {
+                    if (type.name in definition.whitespaces) {
+                        return@filter false
+                    }
+                }
+                return@filter true
+            }.joinToString("\n") {
+                it.first.pretty(it.second)
+            })
         }
     }
 
